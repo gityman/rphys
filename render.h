@@ -15,6 +15,8 @@ render_state_t *create_render_state();
 
 int check_exit_glfw(render_state_t *);
 
+void render_tick(render_state_t *);
+
 void destroy_render_state(render_state_t *);
 
 #endif // RENDER_H_

@@ -19,7 +19,7 @@ render_state_t *create_render_state() {
     if (!glfwInit()) return ret;
     glfwSetErrorCallback(error_callback);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    ret->window = glfwCreateWindow(800, 800, "Voxel Engine", NULL, NULL);
+    ret->window = glfwCreateWindow(800, 800, "Russel's Physics Engine", NULL, NULL);
     if (ret->window) {
         glfwShowWindow(ret->window);
         glfwMakeContextCurrent(ret->window);
@@ -34,6 +34,12 @@ render_state_t *create_render_state() {
 
 int check_exit_glfw(render_state_t *render_state) {
     return glfwWindowShouldClose(render_state->window) || glfwGetKey(render_state->window, GLFW_KEY_ESCAPE);
+}
+
+void render_tick(render_state_t *render_state) {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glfwSwapBuffers(render_state->window);
+    glfwPollEvents();
 }
 
 void destroy_render_state(render_state_t *render_state) {

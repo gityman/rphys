@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
     }
 
     while (!check_exit_glfw(render_state)) {
-
+        render_tick(render_state);
     }
 
     destroy_render_state(render_state);
