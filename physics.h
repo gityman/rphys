@@ -8,8 +8,8 @@
 
 typedef struct quad_tree {
     float qx, qy, qw, qh;
-    unsigned int size, allocated;
-    float *x, *y, *r;
+    int size, allocated, *id;
+    float *x, *y, *w, *h;
     struct quad_tree **sub_trees;
 } quad_tree_t;
 
@@ -17,7 +17,7 @@ typedef struct world_state {
     int n, e, s, w;
 } world_state_t;
 
-int insert_quad_tree(quad_tree_t *, float, float, float);
+int insert_quad_tree(quad_tree_t *, float, float, float, float, int);
 
 quad_tree_t *create_quad_tree(int, int, int, int);
 
