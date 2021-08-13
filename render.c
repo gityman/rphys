@@ -37,7 +37,6 @@ int check_exit_glfw(render_state_t *render_state) {
 }
 
 void draw_regular_poly(render_state_t *render_state, float cx, float cy, float r, int segments) {
-    printf("%d\n", segments);
     if (segments < 3) return;
     float theta = 2 * M_PI / segments;
     float tan_fac = tanf(theta);
@@ -60,6 +59,22 @@ void draw_regular_poly(render_state_t *render_state, float cx, float cy, float r
 
 void draw_circle(render_state_t *render_state, float cx, float cy, float r) {
     draw_regular_poly(render_state, cx, cy, r, 10 * sqrtf(r));
+}
+
+void draw_quad_tree(render_state_t *render_state, quad_tree_t *quad_tree) {
+    glBegin(GL_LINE_LOOP);
+
+    glVertex2f(4 * (quad_tree->qx) / render_state->width, 4 * (quad_tree->qy) / render_state->height);
+    glVertex2f(4 * (quad_tree->qx + quad_tree->qw) / render_state->width, 4 * (quad_tree->qy) / render_state->height);
+    glVertex2f(4 * (quad_tree->qx + quad_tree->qw) / render_state->width, 4 * (quad_tree->qy + quad_tree->qh) / render_state->height);
+    glVertex2f(4 * (quad_tree->qx) / render_state->width, 4 * (quad_tree->qy + quad_tree->qh) / render_state->height);
+
+    glEnd();
+    if (quad_tree->sub_trees != NULL) {
+        for (int i = 0; i < 4; i++) {
+            draw_quad_tree(render_state, quad_tree->sub_trees[i]);
+        }
+    }
 }
 
 void render_tick(render_state_t *render_state) {
