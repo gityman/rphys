@@ -19,10 +19,10 @@ int insert_quad_tree(quad_tree_t *quad_tree, float x, float y, float r) {
         int qy1 = quad_tree->qy + quad_tree->qh / 2;
         int qx2 = quad_tree->qx + quad_tree->qw;
         int qy2 = quad_tree->qy + quad_tree->qh;
-        quad_tree->sub_trees[0] = create_quad_tree(0, NULL, NULL, NULL, qx0, qy0, qx1 - qx0, qy1 - qy0);
-        quad_tree->sub_trees[1] = create_quad_tree(0, NULL, NULL, NULL, qx1, qy0, qx2 - qx1, qy1 - qy0);
-        quad_tree->sub_trees[2] = create_quad_tree(0, NULL, NULL, NULL, qx0, qy1, qx1 - qx0, qy2 - qy1);
-        quad_tree->sub_trees[3] = create_quad_tree(0, NULL, NULL, NULL, qx1, qy1, qx2 - qx1, qy2 - qy1);
+        quad_tree->sub_trees[0] = create_quad_tree(qx0, qy0, qx1 - qx0, qy1 - qy0);
+        quad_tree->sub_trees[1] = create_quad_tree(qx1, qy0, qx2 - qx1, qy1 - qy0);
+        quad_tree->sub_trees[2] = create_quad_tree(qx0, qy1, qx1 - qx0, qy2 - qy1);
+        quad_tree->sub_trees[3] = create_quad_tree(qx1, qy1, qx2 - qx1, qy2 - qy1);
     }
     int sub_insert = insert_quad_tree(quad_tree->sub_trees[0], x, y, r)
         || insert_quad_tree(quad_tree->sub_trees[1], x, y, r)
@@ -42,7 +42,7 @@ int insert_quad_tree(quad_tree_t *quad_tree, float x, float y, float r) {
     return 1;
 }
 
-quad_tree_t *create_quad_tree(int num, float *x, float *y, float *r, int qx, int qy, int qw, int qh) {
+quad_tree_t *create_quad_tree(int qx, int qy, int qw, int qh) {
     quad_tree_t *quad_tree = malloc(sizeof(quad_tree));
     quad_tree->qx = qx;
     quad_tree->qy = qy;
@@ -54,8 +54,19 @@ quad_tree_t *create_quad_tree(int num, float *x, float *y, float *r, int qx, int
     quad_tree->y = malloc(quad_tree->allocated * sizeof(float));
     quad_tree->r = malloc(quad_tree->allocated * sizeof(float));
     quad_tree->sub_trees = NULL;
-    for (int i = 0; i < num; i++) {
-        insert_quad_tree(quad_tree, x[i], y[i], r[i]);
-    }
     return quad_tree;
+}
+
+void delete_quad_tree(quad_tree_t *quad_tree) {
+    if (quad_tree == NULL) return;
+    free(quad_tree->x);
+    free(quad_tree->y);
+    free(quad_tree->r);
+    if (quad_tree->sub_trees != NULL) {
+        for (int i = 0; i < 4; i++) {
+            delete_quad_tree(quad_tree->sub_trees[i]);
+        }
+        free(quad_tree->sub_trees);
+    }
+    free(quad_tree);
 }

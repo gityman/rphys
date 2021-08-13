@@ -19,6 +19,8 @@ typedef struct world_state {
 
 int insert_quad_tree(quad_tree_t *, float, float, float);
 
-quad_tree_t *create_quad_tree(int, float *, float *, float *, int, int, int, int);
+quad_tree_t *create_quad_tree(int, int, int, int);
+
+void delete_quad_tree(quad_tree_t *);
 
 #endif // PHYSICS_H_
