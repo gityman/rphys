@@ -36,8 +36,35 @@ int check_exit_glfw(render_state_t *render_state) {
     return glfwWindowShouldClose(render_state->window) || glfwGetKey(render_state->window, GLFW_KEY_ESCAPE);
 }
 
+void draw_regular_poly(render_state_t *render_state, float cx, float cy, float r, int segments) {
+    printf("%d\n", segments);
+    if (segments < 3) return;
+    float theta = 2 * M_PI / segments;
+    float tan_fac = tanf(theta);
+    float rad_fac = cosf(theta);
+    float x = r, y = 0;
+
+    glBegin(GL_POLYGON);
+
+    for (int i = 0; i < segments; i++) {
+        glVertex2f(4 * (x + cx) / render_state->width, 4 * (y + cy) / render_state->height);
+        float ox = x;
+        x += -y * tan_fac;
+        y += ox * tan_fac;
+        x *= rad_fac;
+        y *= rad_fac;
+    }
+
+    glEnd();
+}
+
+void draw_circle(render_state_t *render_state, float cx, float cy, float r) {
+    draw_regular_poly(render_state, cx, cy, r, 10 * sqrtf(r));
+}
+
 void render_tick(render_state_t *render_state) {
     glClear(GL_COLOR_BUFFER_BIT);
+
     glfwSwapBuffers(render_state->window);
     glfwPollEvents();
 }
