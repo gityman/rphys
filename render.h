@@ -24,7 +24,7 @@ void draw_circle(render_state_t *, float, float, float);
 
 void draw_quad_tree(render_state_t *, quad_tree_t *);
 
-void render_tick(render_state_t *);
+void render_tick(render_state_t *, world_state_t *);
 
 void destroy_render_state(render_state_t *);
 
