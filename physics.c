@@ -127,6 +127,7 @@ world_state_t *create_random_world_state(float wx, float wy, float ww, float wh,
     world_state_t *world_state = create_blank_world_state(wx, wy, ww, wh, num);
     for (int i = 0; i < num; i++) {
         world_state->r[i] = rand_f() * (MAX_RAD - MIN_RAD) + MIN_RAD;
+        world_state->m[i] = rand_f() * (MAX_MASS - MIN_MASS) + MIN_MASS;
         world_state->x[i] = rand_f() * (ww - 2 * world_state->r[i]) + wx + world_state->r[i];
         world_state->y[i] = rand_f() * (wh - 2 * world_state->r[i]) + wy + world_state->r[i];
         world_state->dx[i] = rand_f() * 2 * MAX_INIT_VAL - MAX_INIT_VAL;
@@ -148,6 +149,7 @@ world_state_t *create_blank_world_state(float wx, float wy, float ww, float wh, 
     world_state->dx = malloc(num * sizeof(float));
     world_state->dy = malloc(num * sizeof(float));
     world_state->r = malloc(num * sizeof(float));
+    world_state->m = malloc(num * sizeof(float));
     return world_state;
 }
 
@@ -168,6 +170,7 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
         new_world_state->dx[i] = world_state->dx[i];
         new_world_state->dy[i] = world_state->dy[i];
         new_world_state->r[i] = world_state->r[i];
+        new_world_state->m[i] = world_state->m[i];
         if (new_world_state->x[i] - new_world_state->r[i] < new_world_state->wx) {
             new_world_state->x[i] = new_world_state->r[i] + new_world_state->wx;
             new_world_state->dx[i] *= -1;
@@ -188,14 +191,10 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
     for (int i = 0; i < world_state->num; i++) {
         query_result_t query_result = query_quad_tree(new_world_state->quad_tree, new_world_state->x[i] - new_world_state->r[i], new_world_state->y[i] - new_world_state->r[i], new_world_state->r[i] * 2, new_world_state->r[i] * 2);
         for (int qi = 0; qi < query_result.size; qi++) {
-        //for (int qi = 0; qi < world_state->num; qi++) {
             if (i == query_result.ids[qi]) continue;
             float dx = new_world_state->x[i] - new_world_state->x[query_result.ids[qi]];
             float dy = new_world_state->y[i] - new_world_state->y[query_result.ids[qi]];
             float ar = new_world_state->r[i] + new_world_state->r[query_result.ids[qi]];
-            //float dx = new_world_state->x[i] - new_world_state->x[qi];
-            //float dy = new_world_state->y[i] - new_world_state->y[qi];
-            //float ar = new_world_state->r[i] + new_world_state->r[qi];
             if ((dx * dx) + (dy * dy) < ar * ar) {
                 new_world_state->dx[i] = 0;
                 new_world_state->dy[i] = 0;
@@ -212,5 +211,6 @@ void delete_world_state(world_state_t *world_state) {
     free(world_state->dx);
     free(world_state->dy);
     free(world_state->r);
+    free(world_state->m);
     free(world_state);
 }

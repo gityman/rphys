@@ -6,8 +6,10 @@
 #include <stdio.h>
 
 #define QUAD_TREE_CAPACITY 1
-#define MIN_RAD 3
-#define MAX_RAD 5
+#define MIN_RAD 2.
+#define MAX_RAD 7.
+#define MIN_MASS 1.
+#define MAX_MASS 3.
 #define MAX_INIT_VAL 100.
 
 typedef struct query_result {
@@ -23,7 +25,7 @@ typedef struct quad_tree {
 
 typedef struct world_state {
     float wx, wy, ww, wh, num;
-    float *x, *y, *dx, *dy, *r;
+    float *x, *y, *dx, *dy, *r, *m;
     quad_tree_t *quad_tree;
 } world_state_t;
 
