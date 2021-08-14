@@ -3,11 +3,16 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #define QUAD_TREE_CAPACITY 1
-#define MIN_RAD 1
-#define MAX_RAD 3
+#define MIN_RAD 3
+#define MAX_RAD 5
 #define MAX_INIT_VAL 100.
+
+typedef struct query_result {
+    int *ids, size, allocated;
+} query_result_t;
 
 typedef struct quad_tree {
     float qx, qy, qw, qh;
@@ -28,12 +33,18 @@ quad_tree_t *create_quad_tree(float, float, float, float);
 
 int insert_quad_tree(quad_tree_t *, float, float, float, float, int);
 
+query_result_t query_quad_tree(quad_tree_t *, int, int, int, int);
+
 void delete_quad_tree(quad_tree_t *);
 
 world_state_t *create_random_world_state(float, float, float, float, int);
 
+world_state_t *create_blank_world_state(float, float, float, float, int);
+
 quad_tree_t *create_quad_tree_from_world_state(world_state_t *);
 
-void physics_tick(world_state_t *, float);
+world_state_t *physics_tick(world_state_t *, float);
+
+void delete_world_state(world_state_t *);
 
 #endif // PHYSICS_H_

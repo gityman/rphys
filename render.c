@@ -62,6 +62,8 @@ void draw_circle(render_state_t *render_state, float cx, float cy, float r) {
 }
 
 void draw_quad_tree(render_state_t *render_state, quad_tree_t *quad_tree) {
+    if (quad_tree == NULL) return;
+
     glBegin(GL_LINE_LOOP);
 
     glVertex2f(4 * (quad_tree->qx) / render_state->width, 4 * (quad_tree->qy) / render_state->height);

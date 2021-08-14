@@ -22,8 +22,10 @@ int main(int argc, char **argv) {
     while (!check_exit_glfw(render_state)) {
         gettimeofday(&start, NULL);
         delete_quad_tree(world_state->quad_tree);
-        physics_tick(world_state, dt);
         world_state->quad_tree = create_quad_tree_from_world_state(world_state);
+        world_state_t *new_world_state = physics_tick(world_state, dt);
+        delete_world_state(world_state);
+        world_state = new_world_state;
         render_tick(render_state, world_state);
         gettimeofday(&stop, NULL);
         dt = (double) (stop.tv_usec - start.tv_usec) / 1000000. + (double) (stop.tv_sec - start.tv_sec);

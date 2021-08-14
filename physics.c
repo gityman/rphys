@@ -70,6 +70,43 @@ int insert_quad_tree(quad_tree_t *quad_tree, float x, float y, float w, float h,
     return 1;
 }
 
+query_result_t query_quad_tree(quad_tree_t *quad_tree, int x, int y, int w, int h) {
+    if (x + w < quad_tree->qx
+        || x >= quad_tree->qx + quad_tree->qw
+        || y + h < quad_tree->qy
+        || y >= quad_tree->qy + quad_tree->qh) {
+        return (query_result_t) {NULL, 0, 0};
+    }
+    query_result_t query_result = (query_result_t) {NULL, 0, 0};
+    for (int i = 0; i < quad_tree->size; i++) {
+        if (x + w < quad_tree->x[i]
+            || x >= quad_tree->x[i] + quad_tree->w[i]
+            || y + h < quad_tree->y[i]
+            || y >= quad_tree->y[i] + quad_tree->h[i]) {
+            while (query_result.size >= query_result.allocated) {
+                if (query_result.allocated <= 0) query_result.allocated = 1;
+                else query_result.allocated *= 2;
+                query_result.ids = realloc(query_result.ids, query_result.allocated * sizeof(int));
+            }
+            query_result.ids[query_result.size++] = quad_tree->id[i];
+        }
+    }
+    if (quad_tree->sub_trees == NULL) return query_result;
+    for (int i = 0; i < 4; i++) {
+        query_result_t sub_query_result = query_quad_tree(quad_tree->sub_trees[i], x, y, w, h);
+        for (int n = 0; n < sub_query_result.size; n++) {
+            while (query_result.size >= query_result.allocated) {
+                if (query_result.allocated <= 0) query_result.allocated = 1;
+                else query_result.allocated *= 2;
+                query_result.ids = realloc(query_result.ids, query_result.allocated * sizeof(int));
+            }
+            query_result.ids[query_result.size++] = sub_query_result.ids[n];
+        }
+        free(sub_query_result.ids);
+    }
+    return query_result;
+}
+
 void delete_quad_tree(quad_tree_t *quad_tree) {
     if (quad_tree == NULL) return;
     free(quad_tree->x);
@@ -87,6 +124,18 @@ void delete_quad_tree(quad_tree_t *quad_tree) {
 }
 
 world_state_t *create_random_world_state(float wx, float wy, float ww, float wh, int num) {
+    world_state_t *world_state = create_blank_world_state(wx, wy, ww, wh, num);
+    for (int i = 0; i < num; i++) {
+        world_state->r[i] = rand_f() * (MAX_RAD - MIN_RAD) + MIN_RAD;
+        world_state->x[i] = rand_f() * (ww - 2 * world_state->r[i]) + wx + world_state->r[i];
+        world_state->y[i] = rand_f() * (wh - 2 * world_state->r[i]) + wy + world_state->r[i];
+        world_state->dx[i] = rand_f() * 2 * MAX_INIT_VAL - MAX_INIT_VAL;
+        world_state->dy[i] = rand_f() * 2 * MAX_INIT_VAL - MAX_INIT_VAL;
+    }
+    return world_state;
+}
+
+world_state_t *create_blank_world_state(float wx, float wy, float ww, float wh, int num) {
     world_state_t *world_state = malloc(sizeof(world_state_t));
     world_state->wx = wx;
     world_state->wy = wy;
@@ -99,13 +148,6 @@ world_state_t *create_random_world_state(float wx, float wy, float ww, float wh,
     world_state->dx = malloc(num * sizeof(float));
     world_state->dy = malloc(num * sizeof(float));
     world_state->r = malloc(num * sizeof(float));
-    for (int i = 0; i < num; i++) {
-        world_state->r[i] = rand_f() * (MAX_RAD - MIN_RAD) + MIN_RAD;
-        world_state->x[i] = rand_f() * (ww - 2 * world_state->r[i]) + wx + world_state->r[i];
-        world_state->y[i] = rand_f() * (wh - 2 * world_state->r[i]) + wy + world_state->r[i];
-        world_state->dx[i] = rand_f() * 2 * MAX_INIT_VAL - MAX_INIT_VAL;
-        world_state->dy[i] = rand_f() * 2 * MAX_INIT_VAL - MAX_INIT_VAL;
-    }
     return world_state;
 }
 
@@ -117,9 +159,53 @@ quad_tree_t *create_quad_tree_from_world_state(world_state_t *world_state) {
     return quad_tree;
 }
 
-void physics_tick(world_state_t *world_state, float dt) {
+world_state_t *physics_tick(world_state_t *world_state, float dt) {
+    world_state_t *new_world_state = create_blank_world_state(world_state->wx, world_state->wy, world_state->ww, world_state->wh, world_state->num);
+    new_world_state->quad_tree = world_state->quad_tree;
     for (int i = 0; i < world_state->num; i++) {
-        world_state->x[i] += dt * world_state->dx[i];
-        world_state->y[i] += dt * world_state->dy[i];
+        new_world_state->x[i] = dt * world_state->dx[i] + world_state->x[i];
+        new_world_state->y[i] = dt * world_state->dy[i] + world_state->y[i];
+        new_world_state->dx[i] = world_state->dx[i];
+        new_world_state->dy[i] = world_state->dy[i];
+        new_world_state->r[i] = world_state->r[i];
+        if (new_world_state->x[i] - new_world_state->r[i] < new_world_state->wx) {
+            new_world_state->x[i] = new_world_state->r[i] + new_world_state->wx;
+            new_world_state->dx[i] *= -1;
+        }
+        if (new_world_state->y[i] - new_world_state->r[i] < new_world_state->wy) {
+            new_world_state->y[i] = new_world_state->r[i] + new_world_state->wy;
+            new_world_state->dy[i] *= -1;
+        }
+        if (new_world_state->x[i] + new_world_state->r[i] >= new_world_state->wx + new_world_state->ww) {
+            new_world_state->x[i] = new_world_state->wx + new_world_state->ww - new_world_state->r[i];
+            new_world_state->dx[i] *= -1;
+        }
+        if (new_world_state->y[i] + new_world_state->r[i] >= new_world_state->wy + new_world_state->wh) {
+            new_world_state->y[i] = new_world_state->wy + new_world_state->wh - new_world_state->r[i];
+            new_world_state->dy[i] *= -1;
+        }
     }
+    for (int i = 0; i < world_state->num; i++) {
+        query_result_t query_result = query_quad_tree(new_world_state->quad_tree, new_world_state->x[i] - new_world_state->r[i], new_world_state->y[i] - new_world_state->r[i], new_world_state->r[i] * 2, new_world_state->r[i] * 2);
+        for (int qi = 0; qi < query_result.size; qi++) {
+            float dx = new_world_state->x[i] - world_state->x[qi];
+            float dy = new_world_state->y[i] - world_state->y[qi];
+            float ar = new_world_state->r[i] + world_state->r[qi];
+            if (ar * ar >= dx * dx + dy * dy) {
+                new_world_state->dx[i] = 0;
+                new_world_state->dy[i] = 0;
+            }
+        }
+        free(query_result.ids);
+    }
+    return new_world_state;
+}
+
+void delete_world_state(world_state_t *world_state) {
+    free(world_state->x);
+    free(world_state->y);
+    free(world_state->dx);
+    free(world_state->dy);
+    free(world_state->r);
+    free(world_state);
 }
