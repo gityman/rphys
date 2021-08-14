@@ -79,10 +79,10 @@ query_result_t query_quad_tree(quad_tree_t *quad_tree, int x, int y, int w, int 
     }
     query_result_t query_result = (query_result_t) {NULL, 0, 0};
     for (int i = 0; i < quad_tree->size; i++) {
-        if (x + w < quad_tree->x[i]
+        if (!(x + w < quad_tree->x[i]
             || x >= quad_tree->x[i] + quad_tree->w[i]
             || y + h < quad_tree->y[i]
-            || y >= quad_tree->y[i] + quad_tree->h[i]) {
+            || y >= quad_tree->y[i] + quad_tree->h[i])) {
             while (query_result.size >= query_result.allocated) {
                 if (query_result.allocated <= 0) query_result.allocated = 1;
                 else query_result.allocated *= 2;
@@ -188,10 +188,15 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
     for (int i = 0; i < world_state->num; i++) {
         query_result_t query_result = query_quad_tree(new_world_state->quad_tree, new_world_state->x[i] - new_world_state->r[i], new_world_state->y[i] - new_world_state->r[i], new_world_state->r[i] * 2, new_world_state->r[i] * 2);
         for (int qi = 0; qi < query_result.size; qi++) {
-            float dx = new_world_state->x[i] - world_state->x[qi];
-            float dy = new_world_state->y[i] - world_state->y[qi];
-            float ar = new_world_state->r[i] + world_state->r[qi];
-            if (ar * ar >= dx * dx + dy * dy) {
+        //for (int qi = 0; qi < world_state->num; qi++) {
+            if (i == query_result.ids[qi]) continue;
+            float dx = new_world_state->x[i] - new_world_state->x[query_result.ids[qi]];
+            float dy = new_world_state->y[i] - new_world_state->y[query_result.ids[qi]];
+            float ar = new_world_state->r[i] + new_world_state->r[query_result.ids[qi]];
+            //float dx = new_world_state->x[i] - new_world_state->x[qi];
+            //float dy = new_world_state->y[i] - new_world_state->y[qi];
+            //float ar = new_world_state->r[i] + new_world_state->r[qi];
+            if ((dx * dx) + (dy * dy) < ar * ar) {
                 new_world_state->dx[i] = 0;
                 new_world_state->dy[i] = 0;
             }
