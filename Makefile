@@ -11,7 +11,7 @@ $(OUTPUT): physics.o render.o main.o
 	$(CC) -o $(OUTPUT) physics.o render.o main.o $(LFLAGS)
 main.o: physics.h render.h main.c
 	$(CC) -c -o main.o main.c $(LFLAGS)
-render.o: render.h render.c
+render.o: physics.h render.h render.c
 	$(CC) -c -o render.o render.c $(LFLAGS)
 physics.o: physics.h physics.c
 	$(CC) -c -o physics.o physics.c $(LFLAGS)

@@ -80,6 +80,7 @@ void draw_quad_tree(render_state_t *render_state, quad_tree_t *quad_tree) {
 void render_tick(render_state_t *render_state, world_state_t *world_state) {
     glClear(GL_COLOR_BUFFER_BIT);
 
+    glColor3f(1., 1., 1.);
     for (int i = 0; i < world_state->num; i++) {
         draw_circle(render_state, world_state->x[i], world_state->y[i], world_state->r[i]);
     }
@@ -92,6 +93,9 @@ void render_tick(render_state_t *render_state, world_state_t *world_state) {
     glVertex2f(4 * (world_state->wx) / render_state->width, 4 * (world_state->wy + world_state->wh) / render_state->height);
 
     glEnd();
+
+    glColor3f(0.5, 0.5, 0.5);
+    draw_quad_tree(render_state, world_state->quad_tree);
 
     glfwSwapBuffers(render_state->window);
     glfwPollEvents();

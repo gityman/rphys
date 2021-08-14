@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define QUAD_TREE_CAPACITY 4
-#define MIN_RAD 5
-#define MAX_RAD 20
-#define MAX_INIT_VAL 0.1
+#define QUAD_TREE_CAPACITY 1
+#define MIN_RAD 1
+#define MAX_RAD 3
+#define MAX_INIT_VAL 100.
 
 typedef struct quad_tree {
     float qx, qy, qw, qh;
@@ -33,5 +33,7 @@ void delete_quad_tree(quad_tree_t *);
 world_state_t *create_random_world_state(float, float, float, float, int);
 
 quad_tree_t *create_quad_tree_from_world_state(world_state_t *);
+
+void physics_tick(world_state_t *, float);
 
 #endif // PHYSICS_H_

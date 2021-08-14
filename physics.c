@@ -103,8 +103,8 @@ world_state_t *create_random_world_state(float wx, float wy, float ww, float wh,
         world_state->r[i] = rand_f() * (MAX_RAD - MIN_RAD) + MIN_RAD;
         world_state->x[i] = rand_f() * (ww - 2 * world_state->r[i]) + wx + world_state->r[i];
         world_state->y[i] = rand_f() * (wh - 2 * world_state->r[i]) + wy + world_state->r[i];
-        world_state->dx[i] = rand_f() * 2 * MAX_RAD - MAX_RAD;
-        world_state->dy[i] = rand_f() * 2 * MAX_RAD - MAX_RAD;
+        world_state->dx[i] = rand_f() * 2 * MAX_INIT_VAL - MAX_INIT_VAL;
+        world_state->dy[i] = rand_f() * 2 * MAX_INIT_VAL - MAX_INIT_VAL;
     }
     return world_state;
 }
@@ -115,4 +115,11 @@ quad_tree_t *create_quad_tree_from_world_state(world_state_t *world_state) {
         insert_quad_tree(quad_tree, world_state->x[i] - world_state->r[i], world_state->y[i] - world_state->r[i], world_state->r[i] * 2, world_state->r[i] * 2, i);
     }
     return quad_tree;
+}
+
+void physics_tick(world_state_t *world_state, float dt) {
+    for (int i = 0; i < world_state->num; i++) {
+        world_state->x[i] += dt * world_state->dx[i];
+        world_state->y[i] += dt * world_state->dy[i];
+    }
 }
