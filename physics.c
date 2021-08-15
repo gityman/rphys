@@ -179,24 +179,24 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
         new_world_state->x[i] = dt * world_state->dx[i] + world_state->x[i];
         new_world_state->y[i] = dt * world_state->dy[i] + world_state->y[i];
         new_world_state->dx[i] = world_state->dx[i];
-        new_world_state->dy[i] = world_state->dy[i];
+        new_world_state->dy[i] = world_state->dy[i] - GRAVITY;
         new_world_state->r[i] = world_state->r[i];
         new_world_state->m[i] = world_state->m[i];
         if (new_world_state->x[i] - new_world_state->r[i] < new_world_state->wx) {
             new_world_state->x[i] = new_world_state->r[i] + new_world_state->wx;
-            new_world_state->dx[i] *= -1;
+            new_world_state->dx[i] *= -FRICTIONAL_LOSS;
         }
         if (new_world_state->y[i] - new_world_state->r[i] < new_world_state->wy) {
             new_world_state->y[i] = new_world_state->r[i] + new_world_state->wy;
-            new_world_state->dy[i] *= -1;
+            new_world_state->dy[i] *= -FRICTIONAL_LOSS;
         }
         if (new_world_state->x[i] + new_world_state->r[i] >= new_world_state->wx + new_world_state->ww) {
             new_world_state->x[i] = new_world_state->wx + new_world_state->ww - new_world_state->r[i];
-            new_world_state->dx[i] *= -1;
+            new_world_state->dx[i] *= -FRICTIONAL_LOSS;
         }
         if (new_world_state->y[i] + new_world_state->r[i] >= new_world_state->wy + new_world_state->wh) {
             new_world_state->y[i] = new_world_state->wy + new_world_state->wh - new_world_state->r[i];
-            new_world_state->dy[i] *= -1;
+            new_world_state->dy[i] *= -FRICTIONAL_LOSS;
         }
     }
     for (int i = 0; i < world_state->num; i++) {
@@ -220,10 +220,10 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
                 float old_dy_i = new_world_state->dy[i];
                 float old_dx_qid = new_world_state->dx[qid];
                 float old_dy_qid = new_world_state->dy[qid];
-                new_world_state->dx[i] = (new_world_state->dx[i] * (new_world_state->m[i] - new_world_state->m[qid]) + (2 * new_world_state->m[qid] * old_dx_qid)) / (new_world_state->m[i] + new_world_state->m[qid]);
-                new_world_state->dy[i] = (new_world_state->dy[i] * (new_world_state->m[i] - new_world_state->m[qid]) + (2 * new_world_state->m[qid] * old_dy_qid)) / (new_world_state->m[i] + new_world_state->m[qid]);
-                new_world_state->dx[qid] = (new_world_state->dx[qid] * (new_world_state->m[qid] - new_world_state->m[i]) + (2 * new_world_state->m[i] * old_dx_i)) / (new_world_state->m[i] + new_world_state->m[qid]);
-                new_world_state->dy[qid] = (new_world_state->dy[qid] * (new_world_state->m[qid] - new_world_state->m[i]) + (2 * new_world_state->m[i] * old_dy_i)) / (new_world_state->m[i] + new_world_state->m[qid]);
+                new_world_state->dx[i] = FRICTIONAL_LOSS * (new_world_state->dx[i] * (new_world_state->m[i] - new_world_state->m[qid]) + (2 * new_world_state->m[qid] * old_dx_qid)) / (new_world_state->m[i] + new_world_state->m[qid]);
+                new_world_state->dy[i] = FRICTIONAL_LOSS * (new_world_state->dy[i] * (new_world_state->m[i] - new_world_state->m[qid]) + (2 * new_world_state->m[qid] * old_dy_qid)) / (new_world_state->m[i] + new_world_state->m[qid]);
+                new_world_state->dx[qid] = FRICTIONAL_LOSS * (new_world_state->dx[qid] * (new_world_state->m[qid] - new_world_state->m[i]) + (2 * new_world_state->m[i] * old_dx_i)) / (new_world_state->m[i] + new_world_state->m[qid]);
+                new_world_state->dy[qid] = FRICTIONAL_LOSS * (new_world_state->dy[qid] * (new_world_state->m[qid] - new_world_state->m[i]) + (2 * new_world_state->m[i] * old_dy_i)) / (new_world_state->m[i] + new_world_state->m[qid]);
             }
         }
         free(query_result.ids);
