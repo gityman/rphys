@@ -161,6 +161,17 @@ quad_tree_t *create_quad_tree_from_world_state(world_state_t *world_state) {
     return quad_tree;
 }
 
+float fast_inv_sqrt(float in) {
+    long bits;
+    float half = in * 0.5;
+    bits = *(long *) &in;
+    bits = 0x5f3759df - (bits >> 1);
+    in = *(float *) &bits;
+    in = in * (1.5 - (half * in * in));
+    in = in * (1.5 - (half * in * in));
+    return in;
+}
+
 world_state_t *physics_tick(world_state_t *world_state, float dt) {
     world_state_t *new_world_state = create_blank_world_state(world_state->wx, world_state->wy, world_state->ww, world_state->wh, world_state->num);
     new_world_state->quad_tree = world_state->quad_tree;
@@ -191,13 +202,28 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
     for (int i = 0; i < world_state->num; i++) {
         query_result_t query_result = query_quad_tree(new_world_state->quad_tree, new_world_state->x[i] - new_world_state->r[i], new_world_state->y[i] - new_world_state->r[i], new_world_state->r[i] * 2, new_world_state->r[i] * 2);
         for (int qi = 0; qi < query_result.size; qi++) {
-            if (i == query_result.ids[qi]) continue;
-            float dx = new_world_state->x[i] - new_world_state->x[query_result.ids[qi]];
-            float dy = new_world_state->y[i] - new_world_state->y[query_result.ids[qi]];
-            float ar = new_world_state->r[i] + new_world_state->r[query_result.ids[qi]];
-            if ((dx * dx) + (dy * dy) < ar * ar) {
-                new_world_state->dx[i] = 0;
-                new_world_state->dy[i] = 0;
+            int qid = query_result.ids[qi];
+            if (i == qid) continue;
+            float dx = new_world_state->x[i] - new_world_state->x[qid];
+            float dy = new_world_state->y[i] - new_world_state->y[qid];
+            float ar = new_world_state->r[i] + new_world_state->r[qid];
+            float dist = dx * dx + dy * dy - ar * ar;
+            if (dist < 0) {
+                float inv_sqrt = fast_inv_sqrt(dx * dx + dy * dy);
+                float rx = dx * inv_sqrt;
+                float ry = dy * inv_sqrt;
+                new_world_state->x[i] -= (sqrt(dx * dx + dy * dy) - ar) * rx * new_world_state->r[qid] / ar;
+                new_world_state->y[i] -= (sqrt(dx * dx + dy * dy) - ar) * ry * new_world_state->r[qid] / ar;
+                new_world_state->x[qid] += (sqrt(dx * dx + dy * dy) - ar) * rx * new_world_state->r[i] / ar;
+                new_world_state->y[qid] += (sqrt(dx * dx + dy * dy) - ar) * ry * new_world_state->r[i] / ar;
+                float old_dx_i = new_world_state->dx[i];
+                float old_dy_i = new_world_state->dy[i];
+                float old_dx_qid = new_world_state->dx[qid];
+                float old_dy_qid = new_world_state->dy[qid];
+                new_world_state->dx[i] = (new_world_state->dx[i] * (new_world_state->m[i] - new_world_state->m[qid]) + (2 * new_world_state->m[qid] * old_dx_qid)) / (new_world_state->m[i] + new_world_state->m[qid]);
+                new_world_state->dy[i] = (new_world_state->dy[i] * (new_world_state->m[i] - new_world_state->m[qid]) + (2 * new_world_state->m[qid] * old_dy_qid)) / (new_world_state->m[i] + new_world_state->m[qid]);
+                new_world_state->dx[qid] = (new_world_state->dx[qid] * (new_world_state->m[qid] - new_world_state->m[i]) + (2 * new_world_state->m[i] * old_dx_i)) / (new_world_state->m[i] + new_world_state->m[qid]);
+                new_world_state->dy[qid] = (new_world_state->dy[qid] * (new_world_state->m[qid] - new_world_state->m[i]) + (2 * new_world_state->m[i] * old_dy_i)) / (new_world_state->m[i] + new_world_state->m[qid]);
             }
         }
         free(query_result.ids);
