@@ -7,12 +7,12 @@
 #include <math.h>
 
 #define QUAD_TREE_CAPACITY 1
-#define MIN_RAD 10.
-#define MAX_RAD 20.
+#define MIN_RAD 3.
+#define MAX_RAD 5.
 #define MIN_MASS 1.
 #define MAX_MASS 10.
-#define MAX_INIT_VAL 1000.
-#define FRICTIONAL_LOSS 0.99
+#define MAX_INIT_VAL 100.
+#define FRICTION 1.
 #define GRAVITY 0.
 
 typedef struct query_result {

@@ -184,19 +184,19 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
         new_world_state->m[i] = world_state->m[i];
         if (new_world_state->x[i] - new_world_state->r[i] < new_world_state->wx) {
             new_world_state->x[i] = new_world_state->r[i] + new_world_state->wx;
-            new_world_state->dx[i] *= -FRICTIONAL_LOSS;
+            new_world_state->dx[i] *= -FRICTION;
         }
         if (new_world_state->y[i] - new_world_state->r[i] < new_world_state->wy) {
             new_world_state->y[i] = new_world_state->r[i] + new_world_state->wy;
-            new_world_state->dy[i] *= -FRICTIONAL_LOSS;
+            new_world_state->dy[i] *= -FRICTION;
         }
         if (new_world_state->x[i] + new_world_state->r[i] >= new_world_state->wx + new_world_state->ww) {
             new_world_state->x[i] = new_world_state->wx + new_world_state->ww - new_world_state->r[i];
-            new_world_state->dx[i] *= -FRICTIONAL_LOSS;
+            new_world_state->dx[i] *= -FRICTION;
         }
         if (new_world_state->y[i] + new_world_state->r[i] >= new_world_state->wy + new_world_state->wh) {
             new_world_state->y[i] = new_world_state->wy + new_world_state->wh - new_world_state->r[i];
-            new_world_state->dy[i] *= -FRICTIONAL_LOSS;
+            new_world_state->dy[i] *= -FRICTION;
         }
     }
     for (int i = 0; i < world_state->num; i++) {
@@ -209,21 +209,18 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
             float ar = new_world_state->r[i] + new_world_state->r[qid];
             float dist = dx * dx + dy * dy - ar * ar;
             if (dist < 0) {
-                float inv_sqrt = fast_inv_sqrt(dx * dx + dy * dy);
-                float rx = dx * inv_sqrt;
-                float ry = dy * inv_sqrt;
-                new_world_state->x[i] -= (sqrt(dx * dx + dy * dy) - ar) * rx * new_world_state->r[qid] / ar;
-                new_world_state->y[i] -= (sqrt(dx * dx + dy * dy) - ar) * ry * new_world_state->r[qid] / ar;
-                new_world_state->x[qid] += (sqrt(dx * dx + dy * dy) - ar) * rx * new_world_state->r[i] / ar;
-                new_world_state->y[qid] += (sqrt(dx * dx + dy * dy) - ar) * ry * new_world_state->r[i] / ar;
                 float old_dx_i = new_world_state->dx[i];
                 float old_dy_i = new_world_state->dy[i];
                 float old_dx_qid = new_world_state->dx[qid];
                 float old_dy_qid = new_world_state->dy[qid];
-                new_world_state->dx[i] = FRICTIONAL_LOSS * (new_world_state->dx[i] * (new_world_state->m[i] - new_world_state->m[qid]) + (2 * new_world_state->m[qid] * old_dx_qid)) / (new_world_state->m[i] + new_world_state->m[qid]);
-                new_world_state->dy[i] = FRICTIONAL_LOSS * (new_world_state->dy[i] * (new_world_state->m[i] - new_world_state->m[qid]) + (2 * new_world_state->m[qid] * old_dy_qid)) / (new_world_state->m[i] + new_world_state->m[qid]);
-                new_world_state->dx[qid] = FRICTIONAL_LOSS * (new_world_state->dx[qid] * (new_world_state->m[qid] - new_world_state->m[i]) + (2 * new_world_state->m[i] * old_dx_i)) / (new_world_state->m[i] + new_world_state->m[qid]);
-                new_world_state->dy[qid] = FRICTIONAL_LOSS * (new_world_state->dy[qid] * (new_world_state->m[qid] - new_world_state->m[i]) + (2 * new_world_state->m[i] * old_dy_i)) / (new_world_state->m[i] + new_world_state->m[qid]);
+                new_world_state->dx[i] = FRICTION * (new_world_state->dx[i] * (new_world_state->m[i] - new_world_state->m[qid]) + (2 * new_world_state->m[qid] * old_dx_qid)) / (new_world_state->m[i] + new_world_state->m[qid]);
+                new_world_state->dy[i] = FRICTION * (new_world_state->dy[i] * (new_world_state->m[i] - new_world_state->m[qid]) + (2 * new_world_state->m[qid] * old_dy_qid)) / (new_world_state->m[i] + new_world_state->m[qid]);
+                new_world_state->dx[qid] = FRICTION * (new_world_state->dx[qid] * (new_world_state->m[qid] - new_world_state->m[i]) + (2 * new_world_state->m[i] * old_dx_i)) / (new_world_state->m[i] + new_world_state->m[qid]);
+                new_world_state->dy[qid] = FRICTION * (new_world_state->dy[qid] * (new_world_state->m[qid] - new_world_state->m[i]) + (2 * new_world_state->m[i] * old_dy_i)) / (new_world_state->m[i] + new_world_state->m[qid]);
+                new_world_state->x[i] += dt * new_world_state->dx[i];
+                new_world_state->y[i] += dt * new_world_state->dy[i];
+                new_world_state->x[qid] += dt * new_world_state->dx[qid];
+                new_world_state->y[qid] += dt * new_world_state->dy[qid];
             }
         }
         free(query_result.ids);
