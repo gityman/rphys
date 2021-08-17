@@ -70,7 +70,7 @@ int insert_quad_tree(quad_tree_t *quad_tree, float x, float y, float w, float h,
     return 1;
 }
 
-query_result_t query_quad_tree(quad_tree_t *quad_tree, int x, int y, int w, int h) {
+query_result_t query_quad_tree(quad_tree_t *quad_tree, float x, float y, float w, float h) {
     if (x + w < quad_tree->qx
         || x >= quad_tree->qx + quad_tree->qw
         || y + h < quad_tree->qy
@@ -161,70 +161,60 @@ quad_tree_t *create_quad_tree_from_world_state(world_state_t *world_state) {
     return quad_tree;
 }
 
-float fast_inv_sqrt(float in) {
-    long bits;
-    float half = in * 0.5;
-    bits = *(long *) &in;
-    bits = 0x5f3759df - (bits >> 1);
-    in = *(float *) &bits;
-    in = in * (1.5 - (half * in * in));
-    in = in * (1.5 - (half * in * in));
-    return in;
-}
-
 world_state_t *physics_tick(world_state_t *world_state, float dt) {
     world_state_t *new_world_state = create_blank_world_state(world_state->wx, world_state->wy, world_state->ww, world_state->wh, world_state->num);
-    new_world_state->quad_tree = world_state->quad_tree;
     for (int i = 0; i < world_state->num; i++) {
-        new_world_state->x[i] = dt * world_state->dx[i] + world_state->x[i];
-        new_world_state->y[i] = dt * world_state->dy[i] + world_state->y[i];
+        world_state->x[i] = dt * world_state->dx[i] + world_state->x[i];
+        world_state->y[i] = dt * world_state->dy[i] + world_state->y[i];
+        world_state->dy[i] -= GRAVITY;
+        if (world_state->x[i] - world_state->r[i] < world_state->wx) {
+            world_state->x[i] = world_state->r[i] + world_state->wx;
+            world_state->dx[i] *= -FRICTION;
+        }
+        if (world_state->y[i] - world_state->r[i] < world_state->wy) {
+            world_state->y[i] = world_state->r[i] + world_state->wy;
+            world_state->dy[i] *= -FRICTION;
+        }
+        if (world_state->x[i] + world_state->r[i] > world_state->wx + world_state->ww) {
+            world_state->x[i] = world_state->wx + world_state->ww - world_state->r[i];
+            world_state->dx[i] *= -FRICTION;
+        }
+        if (world_state->y[i] + world_state->r[i] > world_state->wy + world_state->wh) {
+            world_state->y[i] = world_state->wy + world_state->wh - world_state->r[i];
+            world_state->dy[i] *= -FRICTION;
+        }
+        new_world_state->x[i] = world_state->x[i];
+        new_world_state->y[i] = world_state->y[i];
         new_world_state->dx[i] = world_state->dx[i];
-        new_world_state->dy[i] = world_state->dy[i] - GRAVITY;
+        new_world_state->dy[i] = world_state->dy[i];
         new_world_state->r[i] = world_state->r[i];
         new_world_state->m[i] = world_state->m[i];
-        if (new_world_state->x[i] - new_world_state->r[i] < new_world_state->wx) {
-            new_world_state->x[i] = new_world_state->r[i] + new_world_state->wx;
-            new_world_state->dx[i] *= -FRICTION;
-        }
-        if (new_world_state->y[i] - new_world_state->r[i] < new_world_state->wy) {
-            new_world_state->y[i] = new_world_state->r[i] + new_world_state->wy;
-            new_world_state->dy[i] *= -FRICTION;
-        }
-        if (new_world_state->x[i] + new_world_state->r[i] >= new_world_state->wx + new_world_state->ww) {
-            new_world_state->x[i] = new_world_state->wx + new_world_state->ww - new_world_state->r[i];
-            new_world_state->dx[i] *= -FRICTION;
-        }
-        if (new_world_state->y[i] + new_world_state->r[i] >= new_world_state->wy + new_world_state->wh) {
-            new_world_state->y[i] = new_world_state->wy + new_world_state->wh - new_world_state->r[i];
-            new_world_state->dy[i] *= -FRICTION;
-        }
     }
+    delete_quad_tree(world_state->quad_tree);
+    world_state->quad_tree = create_quad_tree_from_world_state(world_state);
     for (int i = 0; i < world_state->num; i++) {
-        query_result_t query_result = query_quad_tree(new_world_state->quad_tree, new_world_state->x[i] - new_world_state->r[i], new_world_state->y[i] - new_world_state->r[i], new_world_state->r[i] * 2, new_world_state->r[i] * 2);
+        query_result_t query_result = query_quad_tree(world_state->quad_tree, world_state->x[i] - world_state->r[i], world_state->y[i] - world_state->r[i], world_state->r[i] * 2, world_state->r[i] * 2);
         for (int qi = 0; qi < query_result.size; qi++) {
             int qid = query_result.ids[qi];
             if (i == qid) continue;
-            float dx = new_world_state->x[i] - new_world_state->x[qid];
-            float dy = new_world_state->y[i] - new_world_state->y[qid];
-            float ar = new_world_state->r[i] + new_world_state->r[qid];
+            float dx = world_state->x[i] - world_state->x[qid];
+            float dy = world_state->y[i] - world_state->y[qid];
+            float ar = world_state->r[i] + world_state->r[qid];
             float dist = dx * dx + dy * dy - ar * ar;
             if (dist < 0) {
-                float old_dx_i = new_world_state->dx[i];
-                float old_dy_i = new_world_state->dy[i];
-                float old_dx_qid = new_world_state->dx[qid];
-                float old_dy_qid = new_world_state->dy[qid];
-                new_world_state->dx[i] = FRICTION * (new_world_state->dx[i] * (new_world_state->m[i] - new_world_state->m[qid]) + (2 * new_world_state->m[qid] * old_dx_qid)) / (new_world_state->m[i] + new_world_state->m[qid]);
-                new_world_state->dy[i] = FRICTION * (new_world_state->dy[i] * (new_world_state->m[i] - new_world_state->m[qid]) + (2 * new_world_state->m[qid] * old_dy_qid)) / (new_world_state->m[i] + new_world_state->m[qid]);
-                new_world_state->dx[qid] = FRICTION * (new_world_state->dx[qid] * (new_world_state->m[qid] - new_world_state->m[i]) + (2 * new_world_state->m[i] * old_dx_i)) / (new_world_state->m[i] + new_world_state->m[qid]);
-                new_world_state->dy[qid] = FRICTION * (new_world_state->dy[qid] * (new_world_state->m[qid] - new_world_state->m[i]) + (2 * new_world_state->m[i] * old_dy_i)) / (new_world_state->m[i] + new_world_state->m[qid]);
-                new_world_state->x[i] += dt * new_world_state->dx[i];
-                new_world_state->y[i] += dt * new_world_state->dy[i];
-                new_world_state->x[qid] += dt * new_world_state->dx[qid];
-                new_world_state->y[qid] += dt * new_world_state->dy[qid];
+                float old_dx_qid = world_state->dx[qid];
+                float old_dy_qid = world_state->dy[qid];
+                new_world_state->dx[i] = FRICTION * (world_state->dx[i] * (world_state->m[i] - world_state->m[qid]) + (2 * world_state->m[qid] * old_dx_qid)) / (world_state->m[i] + world_state->m[qid]);
+                new_world_state->dy[i] = FRICTION * (world_state->dy[i] * (world_state->m[i] - world_state->m[qid]) + (2 * world_state->m[qid] * old_dy_qid)) / (world_state->m[i] + world_state->m[qid]);
+                //new_world_state->dx[i] = 0;
+                //new_world_state->dy[i] = 0;
+                new_world_state->x[i] = dt * new_world_state->dx[i] + new_world_state->x[i];
+                new_world_state->y[i] = dt * new_world_state->dy[i] + new_world_state->y[i];
             }
         }
         free(query_result.ids);
     }
+    new_world_state->quad_tree = world_state->quad_tree;
     return new_world_state;
 }
 

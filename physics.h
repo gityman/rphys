@@ -6,12 +6,12 @@
 #include <stdio.h>
 #include <math.h>
 
-#define QUAD_TREE_CAPACITY 1
-#define MIN_RAD 3.
-#define MAX_RAD 5.
+#define QUAD_TREE_CAPACITY 10
+#define MIN_RAD 2.
+#define MAX_RAD 6.
 #define MIN_MASS 1.
 #define MAX_MASS 10.
-#define MAX_INIT_VAL 100.
+#define MAX_INIT_VAL 400.
 #define FRICTION 1.
 #define GRAVITY 0.
 
@@ -38,7 +38,7 @@ quad_tree_t *create_quad_tree(float, float, float, float);
 
 int insert_quad_tree(quad_tree_t *, float, float, float, float, int);
 
-query_result_t query_quad_tree(quad_tree_t *, int, int, int, int);
+query_result_t query_quad_tree(quad_tree_t *, float, float, float, float);
 
 void delete_quad_tree(quad_tree_t *);
 
