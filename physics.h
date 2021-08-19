@@ -7,13 +7,15 @@
 #include <math.h>
 
 #define QUAD_TREE_CAPACITY 10
-#define MIN_RAD 2.
-#define MAX_RAD 6.
+#define MIN_RAD 3.
+#define MAX_RAD 5.
 #define MIN_MASS 1.
 #define MAX_MASS 10.
-#define MAX_INIT_VAL 400.
-#define FRICTION 1.
-#define GRAVITY 0.
+#define MAX_INIT_VAL 0.
+#define FRICTION 0.98
+#define GRAVITY 100.
+#define MAX_GRAV_ACC 10.
+#define NUM_INITIAL 1000
 
 typedef struct query_result {
     int *ids, size, allocated;
@@ -33,6 +35,8 @@ typedef struct world_state {
 } world_state_t;
 
 float rand_f();
+
+float fast_inv_sqrt(float);
 
 quad_tree_t *create_quad_tree(float, float, float, float);
 

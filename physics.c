@@ -4,6 +4,17 @@ float rand_f() {
     return ((float) (rand() % 10000)) / 10000.;
 }
 
+float fast_inv_sqrt(float in) {
+    long bits;
+    float half = in * 0.5;
+    bits = *(long *) &in;
+    bits = 0x5f3759df - (bits >> 1);
+    in = *(float *) &bits;
+    in = in * (1.5 - (half * in * in));
+    in = in * (1.5 - (half * in * in));
+    return in;
+}
+
 quad_tree_t *create_quad_tree(float qx, float qy, float qw, float qh) {
     quad_tree_t *quad_tree = malloc(sizeof(quad_tree_t));
     quad_tree->qx = qx;
@@ -164,9 +175,15 @@ quad_tree_t *create_quad_tree_from_world_state(world_state_t *world_state) {
 world_state_t *physics_tick(world_state_t *world_state, float dt) {
     world_state_t *new_world_state = create_blank_world_state(world_state->wx, world_state->wy, world_state->ww, world_state->wh, world_state->num);
     for (int i = 0; i < world_state->num; i++) {
-        world_state->x[i] = dt * world_state->dx[i] + world_state->x[i];
-        world_state->y[i] = dt * world_state->dy[i] + world_state->y[i];
-        world_state->dy[i] -= GRAVITY;
+        world_state->x[i] += dt * world_state->dx[i];
+        world_state->y[i] += dt * world_state->dy[i];
+        float inv_rad = fast_inv_sqrt(world_state->x[i] * world_state->x[i] + world_state->y[i] * world_state->y[i]);
+        float acc = GRAVITY * inv_rad;
+        if (acc > MAX_GRAV_ACC) acc = MAX_GRAV_ACC;
+        float ax = world_state->x[i] * inv_rad * -acc;
+        float ay = world_state->y[i] * inv_rad * -acc;
+        world_state->dx[i] += ax;
+        world_state->dy[i] += ay;
         if (world_state->x[i] - world_state->r[i] < world_state->wx) {
             world_state->x[i] = world_state->r[i] + world_state->wx;
             world_state->dx[i] *= -FRICTION;
@@ -202,12 +219,8 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
             float ar = world_state->r[i] + world_state->r[qid];
             float dist = dx * dx + dy * dy - ar * ar;
             if (dist < 0) {
-                float old_dx_qid = world_state->dx[qid];
-                float old_dy_qid = world_state->dy[qid];
-                new_world_state->dx[i] = FRICTION * (world_state->dx[i] * (world_state->m[i] - world_state->m[qid]) + (2 * world_state->m[qid] * old_dx_qid)) / (world_state->m[i] + world_state->m[qid]);
-                new_world_state->dy[i] = FRICTION * (world_state->dy[i] * (world_state->m[i] - world_state->m[qid]) + (2 * world_state->m[qid] * old_dy_qid)) / (world_state->m[i] + world_state->m[qid]);
-                //new_world_state->dx[i] = 0;
-                //new_world_state->dy[i] = 0;
+                new_world_state->dx[i] = FRICTION * (world_state->dx[i] * (world_state->m[i] - world_state->m[qid]) + (2 * world_state->m[qid] * world_state->dx[qid])) / (world_state->m[i] + world_state->m[qid]);
+                new_world_state->dy[i] = FRICTION * (world_state->dy[i] * (world_state->m[i] - world_state->m[qid]) + (2 * world_state->m[qid] * world_state->dy[qid])) / (world_state->m[i] + world_state->m[qid]);
                 new_world_state->x[i] = dt * new_world_state->dx[i] + new_world_state->x[i];
                 new_world_state->y[i] = dt * new_world_state->dy[i] + new_world_state->y[i];
             }
