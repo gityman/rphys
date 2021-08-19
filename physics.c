@@ -141,6 +141,8 @@ world_state_t *create_random_world_state(float wx, float wy, float ww, float wh,
         world_state->m[i] = rand_f() * (MAX_MASS - MIN_MASS) + MIN_MASS;
         world_state->x[i] = rand_f() * (ww - 2 * world_state->r[i]) + wx + world_state->r[i];
         world_state->y[i] = rand_f() * (wh - 2 * world_state->r[i]) + wy + world_state->r[i];
+        //world_state->x[i] = wx + (i * 55) % (int) (ww - 2 * MAX_RAD) + MAX_RAD;
+        //world_state->y[i] = wy + 55 * ((i * 55) / (int) (ww - 2 * MAX_RAD)) + MAX_RAD;
         world_state->dx[i] = rand_f() * 2 * MAX_INIT_VAL - MAX_INIT_VAL;
         world_state->dy[i] = rand_f() * 2 * MAX_INIT_VAL - MAX_INIT_VAL;
     }
@@ -186,19 +188,19 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
         world_state->dy[i] += dt * ay;
         if (world_state->x[i] - world_state->r[i] < world_state->wx) {
             world_state->x[i] = world_state->r[i] + world_state->wx;
-            world_state->dx[i] *= -FRICTION;
+            world_state->dx[i] *= -ELASTICITY;
         }
         if (world_state->y[i] - world_state->r[i] < world_state->wy) {
             world_state->y[i] = world_state->r[i] + world_state->wy;
-            world_state->dy[i] *= -FRICTION;
+            world_state->dy[i] *= -ELASTICITY;
         }
         if (world_state->x[i] + world_state->r[i] > world_state->wx + world_state->ww) {
             world_state->x[i] = world_state->wx + world_state->ww - world_state->r[i];
-            world_state->dx[i] *= -FRICTION;
+            world_state->dx[i] *= -ELASTICITY;
         }
         if (world_state->y[i] + world_state->r[i] > world_state->wy + world_state->wh) {
             world_state->y[i] = world_state->wy + world_state->wh - world_state->r[i];
-            world_state->dy[i] *= -FRICTION;
+            world_state->dy[i] *= -ELASTICITY;
         }
         new_world_state->x[i] = world_state->x[i];
         new_world_state->y[i] = world_state->y[i];
@@ -219,8 +221,17 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
             float ar = world_state->r[i] + world_state->r[qid];
             float dist = dx * dx + dy * dy - ar * ar;
             if (dist < 0) {
-                new_world_state->dx[i] = FRICTION * (world_state->dx[i] * (world_state->m[i] - world_state->m[qid]) + (2 * world_state->m[qid] * world_state->dx[qid])) / (world_state->m[i] + world_state->m[qid]);
-                new_world_state->dy[i] = FRICTION * (world_state->dy[i] * (world_state->m[i] - world_state->m[qid]) + (2 * world_state->m[qid] * world_state->dy[qid])) / (world_state->m[i] + world_state->m[qid]);
+                //new_world_state->dx[i] = ELASTICITY * (world_state->dx[i] * (world_state->m[i] - world_state->m[qid]) + (2 * world_state->m[qid] * world_state->dx[qid])) / (world_state->m[i] + world_state->m[qid]);
+                //new_world_state->dy[i] = ELASTICITY * (world_state->dy[i] * (world_state->m[i] - world_state->m[qid]) + (2 * world_state->m[qid] * world_state->dy[qid])) / (world_state->m[i] + world_state->m[qid]);
+                float dvx = world_state->dx[i] - world_state->dx[qid];
+                float dvy = world_state->dy[i] - world_state->dy[qid];
+                float inv = fast_inv_sqrt(dx * dx + dy * dy);
+                float nx = dx * inv;
+                float ny = dy * inv;
+                float j = -(1 + ELASTICITY) * (nx * dvx + ny * dvy) / ((nx * nx + ny * ny) * ((1. / world_state->m[i]) + (1. / world_state->m[qid])));
+                new_world_state->dx[i] = world_state->dx[i] + nx * j / world_state->m[i];
+                new_world_state->dy[i] = world_state->dy[i] + ny * j / world_state->m[i];
+
                 new_world_state->x[i] = dt * new_world_state->dx[i] + new_world_state->x[i];
                 new_world_state->y[i] = dt * new_world_state->dy[i] + new_world_state->y[i];
             }

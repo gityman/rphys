@@ -12,7 +12,8 @@ world_state_t *world_state;
 int main(int argc, char **argv) {
     struct timeval start, stop;
     gettimeofday(&start, NULL);
-    srand(start.tv_usec);
+    //srand(start.tv_usec);
+    srand(0);
     float dt = 0.;
     render_state = create_render_state();
     world_state = create_random_world_state(-400, -400, 800, 800, NUM_INITIAL);
@@ -23,7 +24,7 @@ int main(int argc, char **argv) {
 
     while (!check_exit_glfw(render_state)) {
         gettimeofday(&start, NULL);
-        world_state_t *new_world_state = physics_tick(world_state, dt);
+        world_state_t *new_world_state = physics_tick(world_state, dt * SIM_SPEED);
         delete_world_state(world_state);
         world_state = new_world_state;
         render_tick(render_state, world_state);
