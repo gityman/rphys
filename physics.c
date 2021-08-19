@@ -182,8 +182,8 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
         if (acc > MAX_GRAV_ACC) acc = MAX_GRAV_ACC;
         float ax = world_state->x[i] * inv_rad * -acc;
         float ay = world_state->y[i] * inv_rad * -acc;
-        world_state->dx[i] += ax;
-        world_state->dy[i] += ay;
+        world_state->dx[i] += dt * ax;
+        world_state->dy[i] += dt * ay;
         if (world_state->x[i] - world_state->r[i] < world_state->wx) {
             world_state->x[i] = world_state->r[i] + world_state->wx;
             world_state->dx[i] *= -FRICTION;

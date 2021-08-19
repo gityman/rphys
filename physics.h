@@ -11,10 +11,10 @@
 #define MAX_RAD 5.
 #define MIN_MASS 1.
 #define MAX_MASS 10.
-#define MAX_INIT_VAL 0.
-#define FRICTION 0.98
-#define GRAVITY 100.
-#define MAX_GRAV_ACC 10.
+#define MAX_INIT_VAL 10.
+#define FRICTION 1.
+#define GRAVITY 1000.
+#define MAX_GRAV_ACC 500.
 #define NUM_INITIAL 1000
 
 typedef struct query_result {

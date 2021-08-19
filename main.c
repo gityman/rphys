@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
         world_state = new_world_state;
         render_tick(render_state, world_state);
         gettimeofday(&stop, NULL);
-        dt = (double) (stop.tv_usec - start.tv_usec) / 1000000. + (double) (stop.tv_sec - start.tv_sec);
+        dt = (float) (stop.tv_usec - start.tv_usec) / 1000000. + (double) (stop.tv_sec - start.tv_sec);
         printf("%f\n", dt * 1000.);
     }
 

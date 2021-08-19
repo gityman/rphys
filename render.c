@@ -29,6 +29,7 @@ render_state_t *create_render_state() {
     glfwGetFramebufferSize(ret->window, &ret->width, &ret->height);
     glViewport(0, 0, ret->width, ret->height);
     glfwSetFramebufferSizeCallback(ret->window, resize_callback);
+    glfwSwapInterval(0);
     return ret;
 }
 
