@@ -7,12 +7,12 @@
 #include <math.h>
 
 #define QUAD_TREE_CAPACITY 10
-#define MIN_RAD 2.
-#define MAX_RAD 5.
+#define MIN_RAD 5.
+#define MAX_RAD 10.
 #define MIN_MASS 1.
 #define MAX_MASS 10.
 #define MAX_INIT_VAL 100.
-#define ELASTICITY 0.5
+#define ELASTICITY 0.95
 #define GRAVITY 10000.
 #define MAX_GRAV_ACC 1000.
 #define NUM_INITIAL 1000
@@ -23,7 +23,7 @@ typedef struct query_result {
 } query_result_t;
 
 typedef struct quad_tree {
-    float qx, qy, qw, qh;
+    float qx, qy, qw, qh, cx, cy, total_mass;
     int size, allocated, *id;
     float *x, *y, *w, *h;
     struct quad_tree **sub_trees;
@@ -41,7 +41,7 @@ float fast_inv_sqrt(float);
 
 quad_tree_t *create_quad_tree(float, float, float, float);
 
-int insert_quad_tree(quad_tree_t *, float, float, float, float, int);
+int insert_quad_tree(quad_tree_t *, float, float, float, float, int, float);
 
 query_result_t query_quad_tree(quad_tree_t *, float, float, float, float);
 

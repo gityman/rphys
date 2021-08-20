@@ -21,6 +21,8 @@ quad_tree_t *create_quad_tree(float qx, float qy, float qw, float qh) {
     quad_tree->qy = qy;
     quad_tree->qw = qw;
     quad_tree->qh = qh;
+    quad_tree->cx = 0;
+    quad_tree->cy = 0;
     quad_tree->size = 0;
     quad_tree->allocated = QUAD_TREE_CAPACITY;
     quad_tree->x = malloc(quad_tree->allocated * sizeof(float));
@@ -33,7 +35,7 @@ quad_tree_t *create_quad_tree(float qx, float qy, float qw, float qh) {
     return NULL;
 }
 
-int insert_quad_tree(quad_tree_t *quad_tree, float x, float y, float w, float h, int id) {
+int insert_quad_tree(quad_tree_t *quad_tree, float x, float y, float w, float h, int id, float m) {
     if (x < quad_tree->qx || y < quad_tree->qy || x + w >= quad_tree->qx + quad_tree->qw || y + h >= quad_tree->qy + quad_tree->qh) {
         return 0;
     }
@@ -43,6 +45,9 @@ int insert_quad_tree(quad_tree_t *quad_tree, float x, float y, float w, float h,
         quad_tree->w[quad_tree->size] = w;
         quad_tree->h[quad_tree->size] = h;
         quad_tree->id[quad_tree->size] = id;
+        quad_tree->cx = quad_tree->total_mass * quad_tree->cx / (quad_tree->total_mass + m) + x  / (quad_tree->total_mass + m);
+        quad_tree->cy = quad_tree->total_mass * quad_tree->cy / (quad_tree->total_mass + m) + y  / (quad_tree->total_mass + m);
+        quad_tree->total_mass += m;
         quad_tree->size++;
         return 1;
     }
@@ -59,10 +64,10 @@ int insert_quad_tree(quad_tree_t *quad_tree, float x, float y, float w, float h,
         quad_tree->sub_trees[2] = create_quad_tree(qx0, qy1, qx1 - qx0, qy2 - qy1);
         quad_tree->sub_trees[3] = create_quad_tree(qx1, qy1, qx2 - qx1, qy2 - qy1);
     }
-    int sub_insert = insert_quad_tree(quad_tree->sub_trees[0], x, y, w, h, id)
-        || insert_quad_tree(quad_tree->sub_trees[1], x, y, w, h, id)
-        || insert_quad_tree(quad_tree->sub_trees[2], x, y, w, h, id)
-        || insert_quad_tree(quad_tree->sub_trees[3], x, y, w, h, id);
+    int sub_insert = insert_quad_tree(quad_tree->sub_trees[0], x, y, w, h, id, m)
+        || insert_quad_tree(quad_tree->sub_trees[1], x, y, w, h, id, m)
+        || insert_quad_tree(quad_tree->sub_trees[2], x, y, w, h, id, m)
+        || insert_quad_tree(quad_tree->sub_trees[3], x, y, w, h, id, m);
     if (sub_insert > 0) return 1;
     while (quad_tree->size >= quad_tree->allocated) {
         quad_tree->allocated *= 2;
@@ -77,6 +82,9 @@ int insert_quad_tree(quad_tree_t *quad_tree, float x, float y, float w, float h,
     quad_tree->w[quad_tree->size] = w;
     quad_tree->h[quad_tree->size] = h;
     quad_tree->id[quad_tree->size] = id;
+    quad_tree->cx = quad_tree->total_mass * quad_tree->cx / (quad_tree->total_mass + m) + x  / (quad_tree->total_mass + m);
+    quad_tree->cy = quad_tree->total_mass * quad_tree->cy / (quad_tree->total_mass + m) + y  / (quad_tree->total_mass + m);
+    quad_tree->total_mass += m;
     quad_tree->size++;
     return 1;
 }
@@ -169,7 +177,7 @@ world_state_t *create_blank_world_state(float wx, float wy, float ww, float wh, 
 quad_tree_t *create_quad_tree_from_world_state(world_state_t *world_state) {
     quad_tree_t *quad_tree = create_quad_tree(world_state->wx, world_state->wy, world_state->ww, world_state->wh);
     for (int i = 0; i < world_state->num; i++) {
-        insert_quad_tree(quad_tree, world_state->x[i] - world_state->r[i], world_state->y[i] - world_state->r[i], world_state->r[i] * 2, world_state->r[i] * 2, i);
+        insert_quad_tree(quad_tree, world_state->x[i] - world_state->r[i], world_state->y[i] - world_state->r[i], world_state->r[i] * 2, world_state->r[i] * 2, i, world_state->m[i]);
     }
     return quad_tree;
 }
@@ -179,6 +187,7 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
     for (int i = 0; i < world_state->num; i++) {
         world_state->x[i] += dt * world_state->dx[i];
         world_state->y[i] += dt * world_state->dy[i];
+        ///*
         float inv_rad = fast_inv_sqrt(world_state->x[i] * world_state->x[i] + world_state->y[i] * world_state->y[i]);
         float acc = GRAVITY * inv_rad;
         if (acc > MAX_GRAV_ACC) acc = MAX_GRAV_ACC;
@@ -186,6 +195,7 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
         float ay = world_state->y[i] * inv_rad * -acc;
         world_state->dx[i] += dt * ax;
         world_state->dy[i] += dt * ay;
+        //*/
         if (world_state->x[i] - world_state->r[i] < world_state->wx) {
             world_state->x[i] = world_state->r[i] + world_state->wx;
             world_state->dx[i] *= -ELASTICITY;
@@ -221,8 +231,6 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
             float ar = world_state->r[i] + world_state->r[qid];
             float dist = dx * dx + dy * dy - ar * ar;
             if (dist < 0) {
-                //new_world_state->dx[i] = ELASTICITY * (world_state->dx[i] * (world_state->m[i] - world_state->m[qid]) + (2 * world_state->m[qid] * world_state->dx[qid])) / (world_state->m[i] + world_state->m[qid]);
-                //new_world_state->dy[i] = ELASTICITY * (world_state->dy[i] * (world_state->m[i] - world_state->m[qid]) + (2 * world_state->m[qid] * world_state->dy[qid])) / (world_state->m[i] + world_state->m[qid]);
                 float dvx = world_state->dx[i] - world_state->dx[qid];
                 float dvy = world_state->dy[i] - world_state->dy[qid];
                 float inv = fast_inv_sqrt(dx * dx + dy * dy);
@@ -239,6 +247,36 @@ world_state_t *physics_tick(world_state_t *world_state, float dt) {
         free(query_result.ids);
     }
     new_world_state->quad_tree = world_state->quad_tree;
+    world_state = new_world_state;
+    new_world_state = create_blank_world_state(world_state->wx, world_state->wy, world_state->ww, world_state->wh, world_state->num);
+    for (int i = 0; i < world_state->num; i++) {
+        new_world_state->x[i] = world_state->x[i];
+        new_world_state->y[i] = world_state->y[i];
+        new_world_state->dx[i] = world_state->dx[i];
+        new_world_state->dy[i] = world_state->dy[i];
+        new_world_state->r[i] = world_state->r[i];
+        new_world_state->m[i] = world_state->m[i];
+    }
+    new_world_state->quad_tree = create_quad_tree_from_world_state(new_world_state);
+    for (int i = 0; i < world_state->num; i++) {
+        query_result_t query_result = query_quad_tree(world_state->quad_tree, world_state->x[i] - world_state->r[i], world_state->y[i] - world_state->r[i], world_state->r[i] * 2, world_state->r[i] * 2);
+        for (int qi = 0; qi < query_result.size; qi++) {
+            int qid = query_result.ids[qi];
+            if (i == qid) continue;
+            float dx = world_state->x[i] - world_state->x[qid];
+            float dy = world_state->y[i] - world_state->y[qid];
+            float ar = world_state->r[i] + world_state->r[qid];
+            float dist = dx * dx + dy * dy - ar * ar;
+            if (dist < 0) {
+                new_world_state->x[i] += dx * world_state->r[qid] / ar;
+                new_world_state->y[i] += dy * world_state->r[qid] / ar;
+            }
+        }
+        free(query_result.ids);
+    }
+    delete_quad_tree(world_state->quad_tree);
+    delete_world_state(world_state);
+
     return new_world_state;
 }
 

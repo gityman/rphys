@@ -12,7 +12,7 @@ world_state_t *world_state;
 int main(int argc, char **argv) {
     struct timeval start, stop;
     gettimeofday(&start, NULL);
-    //srand(start.tv_usec);
+    srand(start.tv_usec);
     srand(0);
     float dt = 0.;
     render_state = create_render_state();
