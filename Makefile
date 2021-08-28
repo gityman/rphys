@@ -4,7 +4,7 @@ OUTPUT = rphys
 ifeq  ($(PLATFORM),Darwin)
 	LFLAGS=-I/usr/local/include -L/usr/local/lib -lglfw -framework OpenGL
 else
-	LFLAGS=-I/usr/local/include -L/usr/local/lib -lglfw -lGL
+	LFLAGS=-I/usr/local/include -L/usr/local/lib -lglfw -lGL -lm
 endif
 
 $(OUTPUT): physics.o render.o main.o

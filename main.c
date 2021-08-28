@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
     srand(0);
     float dt = 0.;
     render_state = create_render_state();
-    world_state = create_random_world_state(-400, -400, 800, 800, NUM_INITIAL);
+    world_state = create_random_world_state(-200, -200, 400, 400, NUM_INITIAL);
     if (render_state->window == NULL) {
         fprintf(stderr, "Couldn't create GLFW window.");
         exit(EXIT_FAILURE);
